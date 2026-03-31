@@ -16,24 +16,23 @@
     .msg.bot { align-self: flex-start; background: white; border: 1px solid #e5e5e5; border-radius: 0 12px 12px 12px; color: #1a1a1a; }
     .msg.user { align-self: flex-end; background: #1a73e8; color: white; border-radius: 12px 0 12px 12px; }
     .msg.error { background: #fdecea; border: 1px solid #f5c6cb; color: #c0392b; align-self: flex-start; }
-    .msg img { max-width: 200px; border-radius: 8px; display: block; margin-bottom: 6px; }
+    .msg img.preview { max-width: 200px; border-radius: 8px; display: block; margin-bottom: 6px; }
     .table-result { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 8px; }
     .table-result td { padding: 5px 8px; border-bottom: 1px solid #f0f0f0; }
     .table-result td:first-child { color: #666; white-space: nowrap; }
     .table-result td:last-child { font-weight: 500; }
     .success-badge { display: inline-block; background: #e8f5e9; color: #2e7d32; font-size: 12px; padding: 3px 8px; border-radius: 10px; margin-bottom: 8px; }
     footer { background: white; padding: 12px 16px; border-top: 1px solid #e5e5e5; display: flex; flex-direction: column; gap: 8px; }
-    .input-row { display: flex; gap: 8px; align-items: flex-end; }
-    textarea { flex: 1; padding: 10px 14px; border: 1px solid #e5e5e5; border-radius: 20px; font-size: 14px; font-family: inherit; resize: none; outline: none; line-height: 1.4; }
-    textarea:focus { border-color: #1a73e8; }
-    .btn-send { width: 40px; height: 40px; border-radius: 50%; background: #1a73e8; color: white; border: none; font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-    .btn-send:disabled { background: #ccc; cursor: not-allowed; }
-    .btn-img { width: 40px; height: 40px; border-radius: 50%; background: #f1f3f4; color: #666; border: 1px solid #e5e5e5; font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-    .btn-img:hover { background: #e8f0fe; color: #1a73e8; }
     #preview-bar { display: none; align-items: center; gap: 8px; padding: 6px 8px; background: #f8f9fa; border-radius: 8px; border: 1px solid #e5e5e5; }
     #preview-bar img { width: 40px; height: 40px; object-fit: cover; border-radius: 6px; }
     #preview-bar span { font-size: 12px; color: #666; flex: 1; }
     #preview-bar button { background: none; border: none; color: #999; cursor: pointer; font-size: 16px; }
+    .input-row { display: flex; gap: 8px; align-items: flex-end; }
+    #input { flex: 1; padding: 10px 14px; border: 1px solid #e5e5e5; border-radius: 20px; font-size: 14px; font-family: inherit; resize: none; outline: none; line-height: 1.4; }
+    #input:focus { border-color: #1a73e8; }
+    .btn-send { width: 40px; height: 40px; border-radius: 50%; background: #1a73e8; color: white; border: none; font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .btn-send:disabled { background: #ccc; cursor: not-allowed; }
+    .btn-img { width: 40px; height: 40px; border-radius: 50%; background: #f1f3f4; color: #666; border: 1px solid #e5e5e5; font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
     .typing { display: flex; gap: 4px; padding: 12px 14px; }
     .typing span { width: 7px; height: 7px; border-radius: 50%; background: #ccc; animation: bounce 1s infinite; }
     .typing span:nth-child(2) { animation-delay: 0.2s; }
@@ -51,44 +50,63 @@
   </header>
 
   <div id="messages">
-    <div class="msg bot">¡Hola! Mandame texto o una foto del terreno y lo cargo en el Sheet automáticamente.</div>
+    <div class="msg bot">¡Hola! Mandame texto o una foto (📎 o Ctrl+V) y lo cargo en el Sheet.</div>
   </div>
 
   <footer>
     <div id="preview-bar">
       <img id="preview-img" src="" alt="preview"/>
-      <span id="preview-name">imagen.jpg</span>
+      <span id="preview-name">imagen</span>
       <button onclick="clearImage()">✕</button>
     </div>
     <div class="input-row">
-      <button class="btn-img" onclick="document.getElementById('file-input').click()" title="Subir imagen">📎</button>
-      <input type="file" id="file-input" accept="image/*" style="display:none" onchange="handleFile(this)">
-      <textarea id="input" placeholder="Pegá texto o subí una foto del terreno..." rows="1"
-        onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();send()}"></textarea>
-      <button class="btn-send" id="btn" onclick="send()">↑</button>
+      <button class="btn-img" onclick="document.getElementById('file-input').click()">📎</button>
+      <input type="file" id="file-input" accept="image/*" style="display:none">
+      <textarea id="input" rows="1" placeholder="Pegá texto o imagen (Ctrl+V)..."></textarea>
+      <button class="btn-send" id="btn-send">↑</button>
     </div>
   </footer>
 
   <script>
-    let pendingImage = null;
-    let pendingImageType = null;
+    var pendingImage = null;
+    var pendingImageType = null;
 
-    function handleFile(input) {
-  const file = input.files[0];
-  if (!file) return;
-  console.log('file selected:', file.name, file.size, file.type);
-  const reader = new FileReader();
-  reader.onload = (e) => {
-    pendingImage = e.target.result.split(',')[1];
-    pendingImageType = file.type;
-    document.getElementById('preview-img').src = e.target.result;
-    document.getElementById('preview-name').textContent = file.name;
-    document.getElementById('preview-bar').style.display = 'flex';
-    console.log('imagen cargada OK, tamaño base64:', pendingImage.length);
-  };
-  reader.readAsDataURL(file);
-  input.value = '';
-}
+    document.getElementById('file-input').addEventListener('change', function() {
+      var file = this.files[0];
+      if (!file) return;
+      loadImage(file, file.name);
+      this.value = '';
+    });
+
+    document.getElementById('input').addEventListener('keydown', function(e) {
+      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
+    });
+
+    document.getElementById('input').addEventListener('paste', function(e) {
+      var items = e.clipboardData && e.clipboardData.items;
+      if (!items) return;
+      for (var i = 0; i < items.length; i++) {
+        if (items[i].type.indexOf('image') !== -1) {
+          e.preventDefault();
+          loadImage(items[i].getAsFile(), 'imagen pegada');
+          break;
+        }
+      }
+    });
+
+    document.getElementById('btn-send').addEventListener('click', send);
+
+    function loadImage(file, name) {
+      var reader = new FileReader();
+      reader.onload = function(e) {
+        var src = e.target.result;
+        pendingImage = src.split(',')[1];
+        pendingImageType = file.type || 'image/jpeg';
+        document.getElementById('preview-img').src = src;
+        document.getElementById('preview-name').textContent = name;
+        document.getElementById('preview-bar').style.display = 'flex';
+      };
+      reader.readAsDataURL(file);
     }
 
     function clearImage() {
@@ -98,18 +116,18 @@
       document.getElementById('preview-img').src = '';
     }
 
-    function addMsg(text, type, isHTML) {
-      const el = document.createElement('div');
+    function addMsg(content, type, isHTML) {
+      var el = document.createElement('div');
       el.className = 'msg ' + type;
-      if (isHTML) el.innerHTML = text;
-      else el.textContent = text;
+      if (isHTML) el.innerHTML = content;
+      else el.textContent = content;
       document.getElementById('messages').appendChild(el);
       el.scrollIntoView({ behavior: 'smooth' });
       return el;
     }
 
     function renderTable(data) {
-      const fields = [
+      var fields = [
         ['Fecha', data.fecha],
         ['Dirección', data.direccion],
         ['Barrio', data.barrio],
@@ -117,36 +135,34 @@
         ['Fondo', data.fondo ? data.fondo + ' m' : ''],
         ['Precio', data.precio ? 'USD ' + Number(data.precio).toLocaleString('es-AR') : ''],
         ['M2 vendibles', data.m2_vendibles ? data.m2_vendibles + ' m²' : ''],
-        ['Incidencia', data.incidencia ? 'USD ' + Number(data.incidencia).toLocaleString('es-AR') + '/m²' : ''],
+        ['Incidencia', data.incidencia ? 'USD ' + Number(data.incidencia).toLocaleString('es-AR') + '/m²' : '']
       ];
-      let html = '<span class="success-badge">✅ Cargado en Google Sheets</span>';
-      html += '<table class="table-result">';
-      fields.forEach(([label, val]) => {
-        html += `<tr><td>${label}</td><td>${val || '<span style="color:#ccc">—</span>'}</td></tr>`;
+      var html = '<span class="success-badge">✅ Cargado en Google Sheets</span><table class="table-result">';
+      fields.forEach(function(f) {
+        html += '<tr><td>' + f[0] + '</td><td>' + (f[1] || '<span style="color:#ccc">—</span>') + '</td></tr>';
       });
-      html += '</table>';
-      return html;
+      return html + '</table>';
     }
 
     async function send() {
-  const input = document.getElementById('input');
-  const text = input.value.trim();
-  console.log('send called, pendingImage:', !!pendingImage, 'text:', text);
-  if (!text && !pendingImage) return;
+      var input = document.getElementById('input');
+      var text = input.value.trim();
+      if (!text && !pendingImage) return;
 
-      if (pendingImage) {
-        addMsg(`<img src="${document.getElementById('preview-img').src}" alt="imagen"/>${text ? text : ''}`, 'user', true);
+      var imgSrc = pendingImage ? document.getElementById('preview-img').src : null;
+      if (imgSrc) {
+        addMsg('<img class="preview" src="' + imgSrc + '"/>' + (text || ''), 'user', true);
       } else {
         addMsg(text, 'user');
       }
 
       input.value = '';
-      document.getElementById('btn').disabled = true;
+      document.getElementById('btn-send').disabled = true;
 
-      const typing = addMsg('', 'bot');
+      var typing = addMsg('', 'bot');
       typing.innerHTML = '<div class="typing"><span></span><span></span><span></span></div>';
 
-      const body = { message: text };
+      var body = { message: text };
       if (pendingImage) {
         body.image = pendingImage;
         body.imageType = pendingImageType;
@@ -154,7 +170,26 @@
       clearImage();
 
       try {
-        const res = await fetch('/api/process', {
+        var res = await fetch('/api/process', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body:
+          body: JSON.stringify(body)
+        });
+        var result = await res.json();
+        typing.remove();
+        if (result.success) {
+          addMsg(renderTable(result.data), 'bot', true);
+        } else {
+          addMsg('Error: ' + result.error, 'error');
+        }
+      } catch(e) {
+        typing.remove();
+        addMsg('Error de conexión: ' + e.message, 'error');
+      }
+
+      document.getElementById('btn-send').disabled = false;
+      input.focus();
+    }
+  </script>
+</body>
+</html>
