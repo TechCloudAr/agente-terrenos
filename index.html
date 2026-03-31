@@ -74,18 +74,21 @@
     let pendingImageType = null;
 
     function handleFile(input) {
-      const file = input.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        pendingImage = e.target.result.split(',')[1];
-        pendingImageType = file.type;
-        document.getElementById('preview-img').src = e.target.result;
-        document.getElementById('preview-name').textContent = file.name;
-        document.getElementById('preview-bar').style.display = 'flex';
-      };
-      reader.readAsDataURL(file);
-      input.value = '';
+  const file = input.files[0];
+  if (!file) return;
+  console.log('file selected:', file.name, file.size, file.type);
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    pendingImage = e.target.result.split(',')[1];
+    pendingImageType = file.type;
+    document.getElementById('preview-img').src = e.target.result;
+    document.getElementById('preview-name').textContent = file.name;
+    document.getElementById('preview-bar').style.display = 'flex';
+    console.log('imagen cargada OK, tamaño base64:', pendingImage.length);
+  };
+  reader.readAsDataURL(file);
+  input.value = '';
+}
     }
 
     function clearImage() {
@@ -126,9 +129,10 @@
     }
 
     async function send() {
-      const input = document.getElementById('input');
-      const text = input.value.trim();
-      if (!text && !pendingImage) return;
+  const input = document.getElementById('input');
+  const text = input.value.trim();
+  console.log('send called, pendingImage:', !!pendingImage, 'text:', text);
+  if (!text && !pendingImage) return;
 
       if (pendingImage) {
         addMsg(`<img src="${document.getElementById('preview-img').src}" alt="imagen"/>${text ? text : ''}`, 'user', true);
