@@ -1,0 +1,5 @@
+{
+  "name": "agente-terrenos",
+  "version": "1.0.0",
+  "description": "Agente IA para cargar terrenos en Google Sheets"
+}
