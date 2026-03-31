@@ -28,9 +28,13 @@ const handler = async (req, res) => {
         }]
       })
     });
+const claudeData = await claudeRes.json();
+console.log('Claude response:', JSON.stringify(claudeData));
+if (!claudeData.content) {
+  return res.status(500).json({ error: 'Claude API error: ' + JSON.stringify(claudeData) });
+}
+const raw = claudeData.content.map(i => i.text || '').join('').trim();
 
-    const claudeData = await claudeRes.json();
-    const raw = claudeData.content.map(i => i.text || '').join('').trim();
     const data = JSON.parse(raw.replace(/```json|```/g, '').trim());
 
     await fetch(SHEETS_URL, {
